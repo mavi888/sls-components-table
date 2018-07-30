@@ -1,0 +1,57 @@
+type: database-api-app
+
+components:
+  # DynamoDB table
+  todoDatabase:
+    type: aws-dynamodb
+    inputs:
+      region: us-east-1
+      tables:
+        - name: todos
+          hashKey: id
+          schema:
+            id: number
+            description: string
+# AWS Lambdas
+  createTodo:
+    type: aws-lambda
+    inputs:
+      memory: 128
+      timeout: 10
+      runtime: nodejs8.10
+      handler: todo.create
+      root: ./code
+      env:
+        todoTableName: todos
+  completeTodo:
+    type: aws-lambda
+    inputs:
+      memory: 128
+      timeout: 10
+      handler: todo.complete
+      root: ./code
+      env:
+        todoTableName: todos
+  listTodo:
+    type: aws-lambda
+    inputs:
+      memory: 128
+      timeout: 10
+      handler: todo.list
+      root: ./code
+      env:
+        todoTableName: todos
+  # API Gateways
+  todosApi:
+    type: rest-api
+    inputs:
+      gateway: aws-apigateway
+      routes:
+        /todo:
+          post:
+            function: ${createTodo}
+          get:
+            function: ${listTodo}
+          /{id}:
+            delete:
+              function: ${completeTodo}
